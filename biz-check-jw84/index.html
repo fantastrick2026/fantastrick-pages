@@ -107,14 +107,15 @@
 </section>
 
 <section class="blk" id="res">
-  <h2>결과 만들기</h2>
-  <p class="sub">버튼을 누르면 처리 내역이 정리됩니다. [복사]해서 대표님께 전달해 주세요.</p>
+  <h2>결과 제출</h2>
+  <p class="sub"><b>[📤 결과 제출]</b> 하나면 끝 — 서버로 전송되어 Claude가 바로 받아 문서에 반영합니다. (전송이 안 되면 [복사]로 카톡 전달 — 예비 수단)</p>
   <div style="margin-bottom:10px">
-    <button class="pri" onclick="gen()">결과 만들기</button>
-    <button onclick="copyOut()">📋 복사</button>
+    <button class="pri" onclick="submitResult()" style="font-size:14px;padding:9px 18px">📤 결과 제출 (서버 전송)</button>
+    <button onclick="gen()">결과 미리보기</button>
+    <button onclick="copyOut()">📋 복사 (예비)</button>
     <span class="saved" id="msg"></span>
   </div>
-  <textarea id="out" readonly placeholder="[결과 만들기]를 누르면 여기에 나옵니다"></textarea>
+  <textarea id="out" readonly placeholder="[결과 미리보기]를 누르면 여기에 나옵니다"></textarea>
 </section>
 
 <footer>FANTASTRICK 내부 · 원본: research/05·07·08 · 이 페이지 입력값은 브라우저(localStorage)에만 저장됩니다</footer>
@@ -291,6 +292,26 @@ function copyOut(){
   t.select();t.setSelectionRange(0,999999);
   try{document.execCommand('copy');document.getElementById('msg').textContent='✔ 복사 완료 — 대표님께 전달해 주세요';}
   catch(e){document.getElementById('msg').textContent='복사 실패 — 드래그로 직접 복사';}
+}
+
+/* ===== 서버 제출 (jsonblob — 일회용) ===== */
+const BLOB='https://jsonblob.com/api/jsonBlob/019fef9e-6352-7567-858c-9ea2066124dc';
+async function submitResult(){
+  gen();
+  const text=document.getElementById('out').value;
+  const msg=document.getElementById('msg');
+  msg.textContent='전송 중…';
+  try{
+    let cur={proj:'ftk-contact-verify',submissions:[]};
+    try{ const r=await fetch(BLOB); if(r.ok) cur=await r.json(); }catch(e){}
+    if(!Array.isArray(cur.submissions)) cur.submissions=[];
+    cur.submissions.push({ts:new Date().toISOString(), by:'장재욱', text});
+    const w=await fetch(BLOB,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(cur)});
+    if(w.ok){ msg.textContent='✅ 제출 완료! Claude가 받아서 문서에 반영합니다. 수고하셨습니다 🙌'; }
+    else throw new Error();
+  }catch(e){
+    msg.textContent='⚠️ 전송 실패 — [📋 복사]로 카톡 전달해 주세요';
+  }
 }
 
 /* 게이트 제거(2026-08-11 대표 지시) — 일회용 페이지: 결과 회수·문서 반영 후 삭제 예정 */
