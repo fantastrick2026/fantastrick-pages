@@ -58,11 +58,19 @@ const LINKS=[
  {id:'blog',    label:'📝 블로그', sub:'장치·운영 이야기', url:'', on:false},
 ];
 
-/* ===== 유입 워치독 (Abacus 무료 카운터) ===== */
+/* ===== 유입 워치독 ===== */
+/* SELF_API: 자체 추적 서버(Vercel /api/t) 주소 — 유찬 배포 후 채우면 자체 전환.
+   비어 있으면 임시로 무가입 카운터(Abacus) 사용. 가이드: bussiness_proj/dev/link-tracker/ */
+const SELF_API='';
 const NS='ftk-lk-x84';
 const API='https://abacus.jasoncameron.dev';
 const SRC_OK=['insta_biz','insta_official','youtube','blog','email','kakao','direct'];
-function hit(key){ try{ fetch(`${API}/hit/${NS}/${key}`,{keepalive:true}).catch(()=>{}); }catch(e){} }
+function hit(key){
+  try{
+    if(SELF_API) fetch(`${SELF_API}?up=1&k=${key}`,{keepalive:true}).catch(()=>{});
+    else fetch(`${API}/hit/${NS}/${key}`,{keepalive:true}).catch(()=>{});
+  }catch(e){}
+}
 
 /* 유입 기록: ?from=채널 (세션당 1회) */
 (function(){

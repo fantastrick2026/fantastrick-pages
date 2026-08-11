@@ -76,8 +76,18 @@
 </div>
 
 <script>
+/* SELF_API: 자체 추적 서버 주소 — index.html과 동일하게 유지. 비면 Abacus만 조회 */
+const SELF_API='';
 const NS='ftk-lk-x84';
 const API='https://abacus.jasoncameron.dev';
+let selfCounts={};
+async function loadSelf(){
+  if(!SELF_API) return;
+  try{
+    const r=await fetch(SELF_API);
+    if(r.ok){ const j=await r.json(); selfCounts=j.counts||{}; }
+  }catch(e){}
+}
 const IN=[
  ['insta_biz','인스타 비즈니스','제작팀 채널 프로필'],
  ['insta_official','인스타 오피셜','@fanta.strick 프로필'],
@@ -93,12 +103,13 @@ const OUT=[
  ['youtube','유튜브 채널'],['blog','블로그'],
 ];
 async function getVal(key){
+  let abacus=0;
   try{
     const r=await fetch(`${API}/get/${NS}/${key}`);
-    if(!r.ok) return 0;
-    const j=await r.json();
-    return j.value||0;
-  }catch(e){return 0;}
+    if(r.ok){ const j=await r.json(); abacus=j.value||0; }
+  }catch(e){}
+  /* 자체 서버 전환 후: 자체 수치 + 기존 Abacus 수치 합산 표시 */
+  return abacus + (selfCounts[key]||0);
 }
 function rows(el,data,cls){
   const max=Math.max(1,...data.map(d=>d.v));
@@ -111,6 +122,7 @@ function rows(el,data,cls){
 }
 async function loadAll(){
   document.getElementById('upd').textContent='불러오는 중…';
+  await loadSelf();
   const inData=await Promise.all(IN.map(async([k,nm,sub])=>({nm,sub,v:await getVal('in_'+k)})));
   const outData=await Promise.all(OUT.map(async([k,nm])=>({nm,v:await getVal('out_'+k)})));
   inData.sort((a,b)=>b.v-a.v); outData.sort((a,b)=>b.v-a.v);
