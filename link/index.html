@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FANTASTRICK — 장치·자동화 링크</title>
+<meta property="og:title" content="FANTASTRICK — 방탈출 장치·자동화">
+<meta property="og:description" content="방탈출 11년 운영팀이 직접 만드는 장치·자동화 시스템">
+<style>
+  :root{--brand:#043CB2; --sky:#2D67D8; --ink:#0B1020; --sub:#566180; --line:#DCE3F0;
+    --fog:#F4F6FB; --gold:#A66B00}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:"Pretendard","Malgun Gothic",-apple-system,"Segoe UI",sans-serif;
+    background:linear-gradient(160deg,#04277a 0%,#043CB2 45%,#2D67D8 100%);min-height:100vh;
+    display:flex;flex-direction:column;align-items:center;padding:40px 18px 30px;color:#fff}
+  .logo{font-family:Impact,'Arial Black',sans-serif;font-size:15px;letter-spacing:.34em;
+    opacity:.9;margin-bottom:18px}
+  .avatar{width:78px;height:78px;border-radius:50%;background:#fff;display:grid;place-items:center;
+    font-size:34px;margin-bottom:14px;box-shadow:0 8px 30px rgba(0,0,0,.25)}
+  h1{font-size:20px;font-weight:800;letter-spacing:-.02em;text-align:center}
+  .bio{font-size:13.5px;opacity:.85;text-align:center;margin:8px 0 26px;line-height:1.6;max-width:340px}
+  .links{width:100%;max-width:420px;display:flex;flex-direction:column;gap:12px}
+  a.btn{display:block;background:#fff;color:var(--ink);text-decoration:none;border-radius:14px;
+    padding:15px 18px;text-align:center;font-weight:800;font-size:15.5px;
+    box-shadow:0 4px 18px rgba(0,0,0,.18);transition:transform .12s}
+  a.btn:active{transform:scale(.97)}
+  a.btn small{display:block;font-weight:600;font-size:11.5px;color:var(--sub);margin-top:3px}
+  a.btn.ghost{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.35);
+    box-shadow:none}
+  a.btn.ghost small{color:rgba(255,255,255,.7)}
+  footer{margin-top:auto;padding-top:30px;font-size:11px;opacity:.55;text-align:center;line-height:1.7}
+  footer a{color:#fff}
+</style>
+</head>
+<body>
+  <div class="logo">FANTASTRICK</div>
+  <div class="avatar">⚙️</div>
+  <h1>판타스트릭 — 방탈출 장치·자동화</h1>
+  <p class="bio">방탈출을 11년 직접 운영하며 만든<br>장치 제어·원격 복구·매장 운영 시스템</p>
+
+  <div class="links" id="links"></div>
+
+  <footer>
+    판타스트릭 대표 승현수 · 010-5536-0483<br>
+    fantastrick@fantastrick.co.kr
+  </footer>
+
+<script>
+/* ===== 링크 정의 (on:false = 채널 생기면 켜기) ===== */
+const LINKS=[
+ {id:'video',   label:'▶️ 90초 실물 영상 보기', sub:'저희 매장에서 실제로 돌아가는 시스템', url:'', on:false},
+ {id:'catalog', label:'📄 제품 소개 자료 (PDF)', sub:'프론트 마스터-슬레이브 시스템 2p', url:'./fantastrick-intro.pdf', on:true},
+ {id:'contact', label:'📝 도입 문의하기', sub:'이메일로 문의 — 하루 안에 답드립니다', url:'mailto:fantastrick@fantastrick.co.kr?subject=%5B%EB%8F%84%EC%9E%85%EB%AC%B8%EC%9D%98%5D%20', on:true},
+ {id:'call',    label:'📞 전화 문의', sub:'010-5536-0483 (평일 낮 연결이 잘 됩니다)', url:'tel:01055360483', on:true},
+ {id:'tgc',     label:'🏠 실제 운영 매장 보기', sub:'이 시스템으로 돌아가는 저희 매장 홈페이지', url:'http://fantastrick.co.kr', on:true},
+ {id:'insta',   label:'📷 인스타그램 (매장 공식)', sub:'@fanta.strick', url:'https://www.instagram.com/fanta.strick', on:true},
+ {id:'youtube', label:'▶️ 유튜브 채널', sub:'시연·설치 영상 모음', url:'', on:false},
+ {id:'blog',    label:'📝 블로그', sub:'장치·운영 이야기', url:'', on:false},
+];
+
+/* ===== 유입 워치독 (Abacus 무료 카운터) ===== */
+const NS='ftk-lk-x84';
+const API='https://abacus.jasoncameron.dev';
+const SRC_OK=['insta_biz','insta_official','youtube','blog','email','kakao','direct'];
+function hit(key){ try{ fetch(`${API}/hit/${NS}/${key}`,{keepalive:true}).catch(()=>{}); }catch(e){} }
+
+/* 유입 기록: ?from=채널 (세션당 1회) */
+(function(){
+  const p=new URLSearchParams(location.search);
+  let src=(p.get('from')||'direct').toLowerCase();
+  if(!SRC_OK.includes(src)) src='direct';
+  try{
+    if(!sessionStorage.getItem('ftk_in')){
+      hit('in_'+src);
+      sessionStorage.setItem('ftk_in','1');
+    }
+  }catch(e){ hit('in_'+src); }
+})();
+
+/* 링크 렌더 + 클릭 기록 */
+const box=document.getElementById('links');
+LINKS.filter(l=>l.on).forEach(l=>{
+  const a=document.createElement('a');
+  a.className='btn'; a.href=l.url;
+  if(/^https?:/.test(l.url)) { a.target='_blank'; a.rel='noopener'; }
+  a.innerHTML=`${l.label}<small>${l.sub}</small>`;
+  a.addEventListener('click',()=>hit('out_'+l.id));
+  box.appendChild(a);
+});
+</script>
+</body>
+</html>

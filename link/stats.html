@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>유입 워치독 — FANTASTRICK</title>
+<meta name="robots" content="noindex,nofollow">
+<style>
+  :root{--brand:#043CB2; --sky:#2D67D8; --ink:#0B1020; --sub:#566180; --line:#DCE3F0;
+    --fog:#F4F6FB; --grn:#0E8A63; --grn-soft:#E4F5EE; --gold:#A66B00; --gold-soft:#FBF3DF; --red:#B42318; --red-soft:#FEF2F2}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:"Pretendard","Malgun Gothic",-apple-system,"Segoe UI",sans-serif;
+    background:var(--fog);color:var(--ink);line-height:1.55;font-size:14px}
+  .wrap{max-width:640px;margin:0 auto;padding:22px 16px 60px}
+  header.top{background:var(--brand);color:#fff;border-radius:12px;padding:18px 20px;margin-bottom:14px}
+  header.top h1{font-size:19px;font-weight:800}
+  header.top p{font-size:12px;opacity:.85;margin-top:4px}
+  section{background:#fff;border:1px solid var(--line);border-radius:11px;padding:15px 17px;margin-bottom:13px}
+  section h2{font-size:15px;font-weight:800;margin-bottom:10px}
+  .row{display:grid;grid-template-columns:130px 1fr 52px;gap:10px;align-items:center;
+    padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}
+  .row:last-child{border-bottom:none}
+  .row .nm{font-weight:700}
+  .row .nm small{display:block;font-weight:500;font-size:10.5px;color:var(--sub)}
+  .bar{height:16px;background:var(--fog);border-radius:99px;overflow:hidden}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--brand),var(--sky));
+    border-radius:99px;min-width:2px;transition:width .5s}
+  .row.out .bar i{background:linear-gradient(90deg,var(--grn),#28b487)}
+  .cnt{text-align:right;font-weight:800;font-variant-numeric:tabular-nums;color:var(--brand)}
+  .row.out .cnt{color:var(--grn)}
+  button{font-family:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--line);
+    background:#fff;font-size:13px;padding:8px 14px}
+  button.pri{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:700;width:100%;padding:11px}
+  .note{background:var(--gold-soft);border-left:4px solid var(--gold);padding:9px 13px;
+    font-size:11.8px;color:#6d5312;border-radius:0 5px 5px 0;line-height:1.6}
+  .upd{font-size:11.5px;color:var(--sub);text-align:center;margin-top:10px}
+  #gate{position:fixed;inset:0;background:var(--brand);z-index:100;display:flex;
+    align-items:center;justify-content:center;padding:20px}
+  #gate .gbox{background:#fff;border-radius:14px;padding:28px;max-width:320px;width:100%;text-align:center;color:var(--ink)}
+  #gate h2{font-size:16px;margin-bottom:12px}
+  #gate input{width:100%;font-size:18px;text-align:center;padding:10px;border:2px solid var(--line);
+    border-radius:8px;letter-spacing:.3em;font-family:inherit}
+  #gate .err{color:var(--red);font-size:12px;margin-top:8px;display:none}
+</style>
+</head>
+<body>
+
+<div id="gate"><div class="gbox">
+  <h2>🔒 유입 워치독</h2>
+  <input type="text" id="gcode" inputmode="numeric" maxlength="4" placeholder="접속 코드">
+  <button class="pri" style="margin-top:12px" onclick="gateTry()">열기</button>
+  <div class="err" id="gerr">코드가 다릅니다</div>
+</div></div>
+
+<div class="wrap" id="app" style="display:none">
+  <header class="top">
+    <h1>📊 링크 페이지 유입 워치독</h1>
+    <p>어느 채널에서 오고, 무엇을 눌렀는지 — 누적 집계</p>
+  </header>
+
+  <section>
+    <h2>🔵 유입 — 어느 채널에서 왔나</h2>
+    <div id="inRows">불러오는 중…</div>
+  </section>
+
+  <section>
+    <h2>🟢 클릭 — 무엇을 눌렀나</h2>
+    <div id="outRows">불러오는 중…</div>
+  </section>
+
+  <button class="pri" onclick="loadAll()">🔄 새로고침</button>
+  <div class="upd" id="upd"></div>
+  <div class="note" style="margin-top:12px"><b>읽는 법</b> — 유입 수치는 각 채널 프로필에 건 링크의 <b>?from= 꼬리표</b> 기준.
+    유입 대비 클릭이 적으면 페이지 문구를, 특정 채널 유입이 많으면 그 채널에 콘텐츠를 더 태우면 됩니다.
+    (무료 카운터 API 기반 — 세션당 유입 1회 집계)</div>
+</div>
+
+<script>
+const NS='ftk-lk-x84';
+const API='https://abacus.jasoncameron.dev';
+const IN=[
+ ['insta_biz','인스타 비즈니스','제작팀 채널 프로필'],
+ ['insta_official','인스타 오피셜','@fanta.strick 프로필'],
+ ['youtube','유튜브','영상 설명란'],
+ ['blog','블로그','글 하단 링크'],
+ ['email','이메일','영업 메일 서명'],
+ ['kakao','카톡·문자','문자 발송분'],
+ ['direct','직접 접속','꼬리표 없음'],
+];
+const OUT=[
+ ['video','90초 영상'],['catalog','제품 소개 PDF'],['contact','도입 문의(메일)'],
+ ['call','전화 문의'],['tgc','매장 홈페이지'],['insta','인스타 오피셜'],
+ ['youtube','유튜브 채널'],['blog','블로그'],
+];
+async function getVal(key){
+  try{
+    const r=await fetch(`${API}/get/${NS}/${key}`);
+    if(!r.ok) return 0;
+    const j=await r.json();
+    return j.value||0;
+  }catch(e){return 0;}
+}
+function rows(el,data,cls){
+  const max=Math.max(1,...data.map(d=>d.v));
+  el.innerHTML=data.map(d=>`
+    <div class="row ${cls}">
+      <div class="nm">${d.nm}${d.sub?`<small>${d.sub}</small>`:''}</div>
+      <div class="bar"><i style="width:${Math.round(d.v/max*100)}%"></i></div>
+      <div class="cnt">${d.v}</div>
+    </div>`).join('');
+}
+async function loadAll(){
+  document.getElementById('upd').textContent='불러오는 중…';
+  const inData=await Promise.all(IN.map(async([k,nm,sub])=>({nm,sub,v:await getVal('in_'+k)})));
+  const outData=await Promise.all(OUT.map(async([k,nm])=>({nm,v:await getVal('out_'+k)})));
+  inData.sort((a,b)=>b.v-a.v); outData.sort((a,b)=>b.v-a.v);
+  rows(document.getElementById('inRows'),inData,'');
+  rows(document.getElementById('outRows'),outData,'out');
+  document.getElementById('upd').textContent='업데이트: '+new Date().toLocaleString('ko-KR');
+}
+function gateTry(){
+  if(document.getElementById('gcode').value.trim()==='0483'){
+    document.getElementById('gate').style.display='none';
+    document.getElementById('app').style.display='block';
+    try{sessionStorage.setItem('ftk_gate2','1');}catch(e){}
+    loadAll();
+  }else document.getElementById('gerr').style.display='block';
+}
+document.getElementById('gcode').addEventListener('keydown',e=>{if(e.key==='Enter')gateTry();});
+try{if(sessionStorage.getItem('ftk_gate2')==='1'){
+  document.getElementById('gate').style.display='none';
+  document.getElementById('app').style.display='block';
+  loadAll();
+}}catch(e){}
+</script>
+</body>
+</html>
