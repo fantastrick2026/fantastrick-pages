@@ -294,23 +294,33 @@ function copyOut(){
   catch(e){document.getElementById('msg').textContent='복사 실패 — 드래그로 직접 복사';}
 }
 
-/* ===== 서버 제출 (jsonblob — 일회용) ===== */
-const BLOB='https://jsonblob.com/api/jsonBlob/019fef9e-6352-7567-858c-9ea2066124dc';
+/* ===== 서버 제출 (ntfy — 일회용, v2: jsonblob 만료 사고로 교체 2026-08-12) ===== */
+const NTFY='https://ntfy.sh/ftk-jw-verify-x84';
 async function submitResult(){
   gen();
   const text=document.getElementById('out').value;
   const msg=document.getElementById('msg');
   msg.textContent='전송 중…';
   try{
-    let cur={proj:'ftk-contact-verify',submissions:[]};
-    try{ const r=await fetch(BLOB); if(r.ok) cur=await r.json(); }catch(e){}
-    if(!Array.isArray(cur.submissions)) cur.submissions=[];
-    cur.submissions.push({ts:new Date().toISOString(), by:'장재욱', text});
-    const w=await fetch(BLOB,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(cur)});
-    if(w.ok){ msg.textContent='✅ 제출 완료! Claude가 받아서 문서에 반영합니다. 수고하셨습니다 🙌'; }
-    else throw new Error();
+    /* ntfy 메시지당 4KB 제한 → 3,200바이트 단위로 줄 경계 분할 전송 */
+    const enc=new TextEncoder();
+    const chunks=[]; let cur='';
+    for(const line of text.split('\n')){
+      const cand=cur?cur+'\n'+line:line;
+      if(enc.encode(cand).length>3200){ if(cur)chunks.push(cur); cur=line; }
+      else cur=cand;
+    }
+    if(cur)chunks.push(cur);
+    const ts=Date.now();
+    for(let i=0;i<chunks.length;i++){
+      const r=await fetch(NTFY,{method:'POST',
+        headers:{'X-Title':`ftkv-${ts}-${i+1}of${chunks.length}`},
+        body:chunks[i]});
+      if(!r.ok) throw new Error('http '+r.status);
+    }
+    msg.textContent=`✅ 제출 완료 (${chunks.length}개 조각 전송)! Claude가 받아 문서에 반영합니다. 수고하셨습니다 🙌`;
   }catch(e){
-    msg.textContent='⚠️ 전송 실패 — [📋 복사]로 카톡 전달해 주세요';
+    msg.textContent='⚠️ 전송 실패 — [📋 복사]를 눌러 카톡으로 보내주세요 (그래도 됩니다!)';
   }
 }
 
